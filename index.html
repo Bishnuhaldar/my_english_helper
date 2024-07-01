@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <title>English Sentence Helper</title>
+    <style>
+        :root {
+            --chat-bg-color: #f9fbfd;
+            --chat-bubble-radius: 15px;
+            --bot-color: #2196F3;
+            --user-color: #4caf50;
+            --input-bg-color: #ffffff;
+            --send-button-color: #ff9800;
+            --send-button-hover-color: #fb8c00;
+            --header-bg-color: #3c89f4;
+            --header-text-color: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #chat-container {
+            display: flex;
+            flex-direction: column;
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
+            border: none;
+            border-radius: 15px;
+            background-color: var(--chat-bg-color);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        #chat-header {
+            background: var(--header-bg-color);
+            padding: 15px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--header-text-color);
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        #chat-history {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: var(--chat-bubble-radius);
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background-color: var(--bot-color);
+            color: #ffffff;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--user-color);
+            color: #ffffff;
+        }
+
+        #user-input-container {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: var(--input-bg-color);
+            border-top: 1px solid #ddd;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 16px;
+            margin-right: 10px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        #user-input:focus {
+            border-color: var(--bot-color);
+        }
+
+        #send-button {
+            padding: 10px 20px;
+            border: none;
+            background-color: var(--send-button-color);
+            color: white;
+            cursor: pointer;
+            border-radius: 20px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        #send-button:hover {
+            background-color: var(--send-button-hover-color);
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-header">
+            English Sentence Helper
+        </div>
+        <div id="chat-history">
+            <div class="chat-bubble bot-message">Welcome! Type a Hindi sentence to get English translations.</div>
+        </div>
+        <div id="user-input-container">
+            <input type="text" id="user-input" placeholder="Type a Hindi sentence...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+    
+        const API_KEY = "AIzaSyB2Ap-o973pkpyvPaKiktbZwd4LX1FxU2c";
+        const genAI = new GoogleGenerativeAI(API_KEY);
+    
+        async function sendMessage(prompt) {
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            let text = response.text();
+            
+            return text;
+        }
+
+        function formatResponse(text) {
+            // Replace **bold** with <b>bold</b>
+            text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            // Replace * bullet points with <li> bullet points
+            text = text.replace(/\*\s(.*?)\n/g, '<li>$1</li>');
+
+            // Wrap bullet points with <ul> tags if any <li> exists
+            if (text.includes('<li>')) {
+                text = `<ul>${text}</ul>`;
+            }
+
+            return text;
+        }
+
+        function addMessageToChat(message, isUser = false) {
+            const chatHistory = document.getElementById("chat-history");
+            const messageBubble = document.createElement("div");
+            messageBubble.className = `chat-bubble ${isUser ? 'user-message' : 'bot-message'}`;
+            messageBubble.innerHTML = message;
+            chatHistory.appendChild(messageBubble);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function handleSendMessage() {
+            const userInput = document.getElementById("user-input").value;
+            if (userInput.trim() === "") return;
+
+            addMessageToChat(userInput, true); // Add user message to chat
+
+            // Add contextual information to the user input
+            const context = `Act as an English sentence helper. Provide 2 to 3 ways to say the given Hindi sentence in English. Please respond in list format without additional comments. Use **bold** text and * bullet points.`;
+            const combinedInput = `${context} ${userInput}`;
+
+            sendMessage(combinedInput).then(response => {
+                const formattedResponse = formatResponse(response);
+                addMessageToChat(formattedResponse);
+            });
+
+            document.getElementById("user-input").value = "";
+        }
+
+        document.getElementById("send-button").addEventListener("click", handleSendMessage);
+
+        document.getElementById("user-input").addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                handleSendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
