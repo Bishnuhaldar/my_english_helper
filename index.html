@@ -52,6 +52,18 @@
             color: var(--header-text-color);
             border-top-left-radius: 15px;
             border-top-right-radius: 15px;
+            position: relative; /* Needed for the profile picture positioning */
+        }
+
+        #profile-picture {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
         }
 
         #chat-history {
@@ -124,6 +136,7 @@
 <body>
     <div id="chat-container">
         <div id="chat-header">
+            <img id="profile-picture" src="my.png" alt="Profile Picture">
             English Sentence Helper
         </div>
         <div id="chat-history">
